@@ -45,6 +45,12 @@ variable "log_retention_days" {
   default     = 90
 }
 
+variable "manage_audit_config" {
+  description = "Whether this module manages the project-level audit config for storage.googleapis.com. Set to false if managed elsewhere or if using multiple instances of this module in the same project."
+  type        = bool
+  default     = true
+}
+
 variable "labels" {
   description = "Labels to apply to all resources"
   type        = map(string)

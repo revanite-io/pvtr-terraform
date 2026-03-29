@@ -64,6 +64,11 @@ resource "aws_kms_key" "this" {
           "kms:DescribeKey",
         ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = local.account_id
+          }
+        }
       },
     ]
   })
@@ -166,7 +171,7 @@ resource "aws_s3_bucket_policy" "this" {
           ]
           Resource = "${aws_s3_bucket.this.arn}/*"
           Condition = {
-            StringNotEqualsIfExists = {
+            StringNotEquals = {
               "s3:x-amz-server-side-encryption-aws-kms-key-id" = aws_kms_key.this.arn
             }
           }
@@ -420,7 +425,7 @@ resource "aws_s3_bucket_policy" "cloudtrail" {
 }
 
 resource "aws_iam_role" "cloudtrail" {
-  name = "${local.bucket_name}-cloudtrail-role"
+  name = substr("${local.bucket_name}-ct-role", 0, 64)
   tags = var.tags
 
   assume_role_policy = jsonencode({
@@ -438,7 +443,7 @@ resource "aws_iam_role" "cloudtrail" {
 }
 
 resource "aws_iam_role_policy" "cloudtrail_logs" {
-  name = "${local.bucket_name}-cloudtrail-logs"
+  name = substr("${local.bucket_name}-ct-logs", 0, 128)
   role = aws_iam_role.cloudtrail.id
 
   policy = jsonencode({
@@ -462,7 +467,7 @@ resource "aws_cloudtrail" "this" {
   kms_key_id                 = aws_kms_key.this.arn
   cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
   cloud_watch_logs_role_arn  = aws_iam_role.cloudtrail.arn
-  is_multi_region_trail      = false
+  is_multi_region_trail      = true
   enable_log_file_validation = true
   tags                       = var.tags
 

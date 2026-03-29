@@ -1,13 +1,39 @@
 ---
 version: 2
 updates:
-  - package-ecosystem: "gomod"
-    directory: "/"
+  - package-ecosystem: "terraform"
+    directory: "/modules/pvtr-aws-s3"
     schedule:
       interval: "weekly"
     commit-message:
       prefix: "chore(deps)"
-    labels: ["go", "dependencies"]
+    labels: ["terraform", "dependencies"]
+    groups:
+      dependencies:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "terraform"
+    directory: "/modules/pvtr-azure-blob-storage"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+    labels: ["terraform", "dependencies"]
+    groups:
+      dependencies:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "terraform"
+    directory: "/modules/pvtr-gcp-cloud-storage"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+    labels: ["terraform", "dependencies"]
     groups:
       dependencies:
         applies-to: version-updates

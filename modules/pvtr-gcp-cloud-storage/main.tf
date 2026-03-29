@@ -30,15 +30,17 @@ resource "google_kms_crypto_key" "this" {
   labels          = var.labels
 
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = true
   }
 }
+
+data "google_storage_project_service_account" "gcs_account" {}
 
 # Grant the GCS service agent permission to use the KMS key
 resource "google_kms_crypto_key_iam_member" "gcs_encrypt" {
   crypto_key_id = google_kms_crypto_key.this.id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:service-${data.google_project.current.number}@gs-project-accounts.iam.gserviceaccount.com"
+  member        = "serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"
 }
 
 # -----------------------------------------------------------------------------
@@ -97,6 +99,10 @@ resource "google_storage_bucket" "logs" {
     purpose     = "access-logs"
   })
 
+  encryption {
+    default_kms_key_name = google_kms_crypto_key.this.id
+  }
+
   versioning {
     enabled = true
   }
@@ -122,6 +128,8 @@ resource "google_storage_bucket" "logs" {
   soft_delete_policy {
     retention_duration_seconds = var.soft_delete_retention_seconds
   }
+
+  depends_on = [google_kms_crypto_key_iam_member.gcs_encrypt]
 }
 
 # -----------------------------------------------------------------------------
@@ -129,7 +137,12 @@ resource "google_storage_bucket" "logs" {
 # Maps to: CCC.ObjStor.CN06 (access logging), CN07.AR03 (deletion audit)
 # -----------------------------------------------------------------------------
 
+# NOTE: google_project_iam_audit_config is authoritative for the given service.
+# If this module is instantiated multiple times in the same project, or if audit
+# logging for storage.googleapis.com is managed elsewhere, use
+# google_project_iam_audit_config outside this module instead.
 resource "google_project_iam_audit_config" "storage" {
+  count   = var.manage_audit_config ? 1 : 0
   project = local.project_id
   service = "storage.googleapis.com"
 

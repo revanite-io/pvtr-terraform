@@ -24,6 +24,7 @@ variable "storage_account_name" {
 variable "allowed_ips" {
   description = "List of IP addresses or CIDR ranges allowed to access the storage account"
   type        = list(string)
+  default     = []
 }
 
 variable "immutability_state" {
@@ -59,6 +60,12 @@ variable "key_rotation_max_days" {
   description = "Maximum days allowed between key rotations for the key rotation policy"
   type        = number
   default     = 90
+}
+
+variable "log_analytics_retention_days" {
+  description = "Number of days to retain logs in the Log Analytics workspace"
+  type        = number
+  default     = 30
 }
 
 variable "tags" {

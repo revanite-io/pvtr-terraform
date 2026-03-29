@@ -38,7 +38,7 @@ resource "azurerm_user_assigned_identity" "this" {
 # -----------------------------------------------------------------------------
 
 resource "azurerm_key_vault" "this" {
-  name                       = "kv-${local.storage_account_name}"
+  name                       = substr("kv-${local.storage_account_name}", 0, 24)
   resource_group_name        = azurerm_resource_group.this.name
   location                   = azurerm_resource_group.this.location
   tenant_id                  = data.azurerm_client_config.current.tenant_id
@@ -163,7 +163,7 @@ resource "azurerm_log_analytics_workspace" "this" {
   resource_group_name = azurerm_resource_group.this.name
   location            = azurerm_resource_group.this.location
   sku                 = "PerGB2018"
-  retention_in_days   = 30
+  retention_in_days   = var.log_analytics_retention_days
   tags                = var.tags
 }
 
