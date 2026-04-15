@@ -51,6 +51,12 @@ variable "manage_audit_config" {
   default     = true
 }
 
+variable "force_destroy" {
+  description = "Allow Terraform to destroy buckets even if they contain objects. Use for test/dev environments only."
+  type        = bool
+  default     = false
+}
+
 variable "labels" {
   description = "Labels to apply to all resources"
   type        = map(string)

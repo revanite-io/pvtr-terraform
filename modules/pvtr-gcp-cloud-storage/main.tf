@@ -19,22 +19,44 @@ resource "random_string" "suffix" {
 # -----------------------------------------------------------------------------
 
 resource "google_kms_key_ring" "this" {
-  name     = local.bucket_name
+  name     = "${local.bucket_name}-${random_string.suffix.result}"
   location = var.region
 }
 
+resource "random_string" "kms_key_suffix" {
+  length  = 6
+  special = false
+  upper   = false
+  numeric = true
+
+  keepers = {
+    key_ring = google_kms_key_ring.this.id
+  }
+}
+
 resource "google_kms_crypto_key" "this" {
-  name            = local.bucket_name
+  name            = "${local.bucket_name}-${random_string.kms_key_suffix.result}"
   key_ring        = google_kms_key_ring.this.id
   rotation_period = var.kms_key_rotation_period
   labels          = var.labels
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy       = false
+    create_before_destroy = true
   }
 }
 
-data "google_storage_project_service_account" "gcs_account" {}
+# Provision the GCS service agent so it exists before IAM binding
+resource "google_project_service_identity" "gcs" {
+  provider = google-beta
+  project  = local.project_id
+  service  = "storage.googleapis.com"
+}
+
+# Resolve the GCS service agent email after it has been provisioned
+data "google_storage_project_service_account" "gcs_account" {
+  depends_on = [google_project_service_identity.gcs]
+}
 
 # Grant the GCS service agent permission to use the KMS key
 resource "google_kms_crypto_key_iam_member" "gcs_encrypt" {
@@ -53,6 +75,7 @@ resource "google_storage_bucket" "this" {
   name                        = local.bucket_name
   location                    = var.region
   project                     = local.project_id
+  force_destroy               = var.force_destroy
   uniform_bucket_level_access = true
   public_access_prevention    = "enforced"
   labels                      = var.labels
@@ -91,6 +114,7 @@ resource "google_storage_bucket" "logs" {
   name                        = local.log_bucket_name
   location                    = var.region
   project                     = local.project_id
+  force_destroy               = var.force_destroy
   uniform_bucket_level_access = true
   public_access_prevention    = "enforced"
 
